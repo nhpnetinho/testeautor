@@ -1,0 +1,8 @@
+{
+  "name": "Elysian Quill - Writer Portfolio",
+  "description": "A sophisticated portfolio for writers featuring a realistic 3D flipping book experience for reading samples and an AI writing assistant.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
