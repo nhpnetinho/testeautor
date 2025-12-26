@@ -1,10 +1,11 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-
 export const getGeminiResponse = async (prompt: string, context: string) => {
   try {
+    // Initializing GoogleGenAI with direct process.env.API_KEY as per guidelines.
+    // Assuming API_KEY is pre-configured and accessible in the execution context.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,

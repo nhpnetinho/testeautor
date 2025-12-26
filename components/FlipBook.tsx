@@ -4,11 +4,6 @@ import { X, Volume2, Square, Loader2, LogOut, ChevronLeft, ChevronRight } from '
 import { GoogleGenAI, Modality } from "@google/genai";
 import { Book } from '../types';
 
-interface FlipBookProps {
-  book: Book;
-  onClose: () => void;
-}
-
 // Helpers para decodificação de áudio
 function decodeBase64ToUint8(base64: string) {
   const binaryString = atob(base64);
@@ -33,6 +28,12 @@ async function decodeRawPCM(data: Uint8Array, ctx: AudioContext, sampleRate: num
   return buffer;
 }
 
+// Added FlipBookProps interface to fix "Cannot find name 'FlipBookProps'" error
+interface FlipBookProps {
+  book: Book;
+  onClose: () => void;
+}
+
 const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
   const [viewIndex, setViewIndex] = useState(0); 
   const [dragProgress, setDragProgress] = useState(0); 
@@ -48,10 +49,6 @@ const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const startX = useRef<number>(0);
 
-  // Cada viewIndex representa um par de páginas (spread)
-  // View 0: [Vazia | Capa]
-  // View 1: [Pág 1 | Pág 2]
-  // View 2: [Pág 3 | Pág 4] ...
   const totalViews = Math.ceil((book.pages.length + 1) / 2) + 1;
   const isBackCoverState = viewIndex === totalViews - 1;
 
@@ -78,13 +75,16 @@ const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
 
   const handleReadAloud = async () => {
     if (isSpeaking) { stopSpeaking(); return; }
+    
     setIsTtsLoading(true);
     try {
       const p1 = getPageContent(viewIndex * 2 - 1);
       const p2 = getPageContent(viewIndex * 2);
       let textToRead = viewIndex === 0 ? `Capa: ${book.title}` : `${p1 !== 'empty' ? p1 : ''} ${p2 !== 'empty' ? p2 : ''}`;
       
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // Initializing GoogleGenAI with direct process.env.API_KEY as per guidelines.
+      // Removed manual environment checks and alerts to comply with SDK rules.
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: `Leia com voz narrativa: ${textToRead}` }] }],
@@ -169,7 +169,7 @@ const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
   const handleNext = () => { if(viewIndex < totalViews - 1) { setDragSide('next'); setIsAnimating(true); setDragProgress(100); setTimeout(() => { setViewIndex(v => v+1); setDragProgress(0); setIsAnimating(false); setDragSide(null); }, 600); } };
   const handlePrev = () => { if(viewIndex > 0) { setDragSide('prev'); setIsAnimating(true); setDragProgress(100); setTimeout(() => { setViewIndex(v => v-1); setDragProgress(0); setIsAnimating(false); setDragSide(null); }, 600); } };
 
-  const PageFace = ({ content, side, shadowIntensity = 0, isFlipping = false }: { content: string, side: 'left' | 'right', shadowIntensity?: number, isFlipping?: boolean }) => (
+  const PageFace = ({ content, side, shadowIntensity = 0 }: { content: string, side: 'left' | 'right', shadowIntensity?: number }) => (
     <div className={`absolute inset-0 bg-white shadow-inner flex flex-col overflow-hidden`}>
       <div className="absolute inset-0 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')] opacity-10"></div>
       <div className={`absolute inset-0 pointer-events-none z-20 bg-gradient-to-${side === 'right' ? 'r' : 'l'} from-black/5 to-transparent`}></div>
@@ -209,7 +209,6 @@ const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-stone-950/95 backdrop-blur-3xl overflow-hidden select-none">
       
-      {/* Top Controls */}
       <div className="absolute top-0 left-0 right-0 h-20 flex items-center justify-between px-8 bg-gradient-to-b from-black/20 to-transparent">
         <div className="text-white/40 text-xs font-bold uppercase tracking-[0.3em] flex items-center gap-4">
            <span className="serif italic text-lg text-white/80">{book.title}</span>
@@ -234,14 +233,12 @@ const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
           onTouchMove={(e) => handleMove(e.touches[0].clientX)}
           onTouchEnd={handleEnd}
         >
-          {/* Base do Livro (Sombras) */}
           <div className="absolute bottom-[5%] w-3/4 h-12 bg-black/50 blur-[120px] rounded-full"></div>
 
           <div className={`relative w-[840px] h-full preserve-3d flex transition-transform duration-700 ease-in-out
             ${viewIndex === 0 ? 'translate-x-[210px]' : isBackCoverState ? '-translate-x-[210px]' : ''}
           `}>
             
-            {/* Esquerda Estática: Mostra a página anterior ou vazia */}
             <div className={`relative flex-1 transition-opacity duration-300 ${viewIndex === 0 && dragSide !== 'prev' ? 'opacity-0' : 'opacity-100'}`}>
               <PageFace 
                 content={dragSide === 'prev' ? getPageContent((viewIndex - 1) * 2 - 1) : getPageContent(viewIndex * 2 - 1)} 
@@ -250,7 +247,6 @@ const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
               />
             </div>
 
-            {/* Direita Estática: Mostra a próxima página que está escondida embaixo da atual */}
             <div className={`relative flex-1 transition-opacity duration-300 ${isBackCoverState && dragSide !== 'next' ? 'opacity-0' : 'opacity-100'}`}>
               <PageFace 
                 content={dragSide === 'next' ? getPageContent((viewIndex + 1) * 2) : getPageContent(viewIndex * 2)} 
@@ -259,7 +255,6 @@ const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
               />
             </div>
 
-            {/* Folha que vira (Animação) */}
             {(dragSide || isAnimating) && (
               <div 
                 className={`absolute top-0 h-full w-1/2 preserve-3d z-50 ${dragSide === 'next' ? 'right-0 origin-left' : 'left-0 origin-right'}`}
@@ -268,33 +263,27 @@ const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
                   transition: isDragging ? 'none' : 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
               >
-                {/* Lado A (Frente da folha que está sendo levantada) */}
                 <div className="absolute inset-0 backface-hidden z-20">
                   <PageFace 
                     content={dragSide === 'next' ? getPageContent(viewIndex * 2) : getPageContent(viewIndex * 2 - 1)} 
                     side={dragSide === 'next' ? 'right' : 'left'} 
                     shadowIntensity={dragProgress / 200}
-                    isFlipping={true}
                   />
                 </div>
-                {/* Lado B (Verso da folha que está sendo levantada - Nova página) */}
                 <div className={`absolute inset-0 backface-hidden z-10 ${dragSide === 'next' ? '[transform:rotateY(180deg)]' : '[transform:rotateY(-180deg)]'}`}>
                   <PageFace 
                     content={dragSide === 'next' ? getPageContent((viewIndex + 1) * 2 - 1) : getPageContent((viewIndex - 1) * 2)} 
                     side={dragSide === 'next' ? 'left' : 'right'} 
                     shadowIntensity={(100 - dragProgress) / 200}
-                    isFlipping={true}
                   />
                 </div>
               </div>
             )}
             
-            {/* Lombada Central */}
             <div className={`absolute left-1/2 top-0 bottom-0 w-[1px] bg-black/10 z-[100] ${(viewIndex === 0 || isBackCoverState) ? 'opacity-0' : 'opacity-100'}`}></div>
           </div>
         </div>
 
-        {/* Botões Laterais de Navegação Rápida */}
         <button onClick={handlePrev} className={`absolute left-8 top-1/2 -translate-y-1/2 p-4 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all ${viewIndex === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <ChevronLeft size={32} />
         </button>
@@ -304,7 +293,6 @@ const FlipBook: React.FC<FlipBookProps> = ({ book, onClose }) => {
 
       </div>
 
-      {/* Control Bar Inferior */}
       <div className="mb-12 w-full max-w-xl flex flex-col items-center gap-6">
         <div className="w-full flex items-center justify-between bg-white/10 backdrop-blur-md p-4 rounded-3xl border border-white/10 shadow-2xl">
            <button 
