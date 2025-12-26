@@ -174,12 +174,12 @@ const App: React.FC = () => {
             </div>
             <div className="flex gap-4 pt-6">
               {[
-                { icon: <Instagram />, label: "Instagram" },
-                { icon: <Twitter />, label: "Twitter" },
-                { icon: <Facebook />, label: "Facebook" },
-                { icon: <Mail />, label: "E-mail" }
+                { icon: <Instagram />, label: "Instagram", href: "#" },
+                { icon: <Twitter />, label: "Twitter", href: "#" },
+                { icon: <Facebook />, label: "Facebook", href: "#" },
+                { icon: <Mail />, label: "E-mail", href: "mailto:elias@exemplo.com" }
               ].map((item, i) => (
-                <a key={i} href="#" className="p-5 bg-white rounded-2xl border border-stone-200 hover:bg-stone-900 hover:text-white hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
+                <a key={i} href={item.href} target="_blank" rel="noopener noreferrer" className="p-5 bg-white rounded-2xl border border-stone-200 hover:bg-stone-900 hover:text-white hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
                   {item.icon}
                 </a>
               ))}
@@ -238,9 +238,15 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center space-y-6">
             <div className="text-6xl font-black text-white serif italic tracking-tighter">Elysian Quill</div>
             <div className="flex gap-8">
-               <Instagram size={20} className="hover:text-white cursor-pointer transition-colors" />
-               <Twitter size={20} className="hover:text-white cursor-pointer transition-colors" />
-               <Facebook size={20} className="hover:text-white cursor-pointer transition-colors" />
+               <a href="#" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-all transform hover:scale-110" aria-label="Instagram">
+                 <Instagram size={24} />
+               </a>
+               <a href="#" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-all transform hover:scale-110" aria-label="Twitter">
+                 <Twitter size={24} />
+               </a>
+               <a href="#" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-all transform hover:scale-110" aria-label="Facebook">
+                 <Facebook size={24} />
+               </a>
             </div>
           </div>
           
